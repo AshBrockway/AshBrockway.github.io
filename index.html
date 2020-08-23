@@ -11,8 +11,13 @@
 	height: 480px;
 	border: 10px #333 solid;
 }
-#videoElement {
+#videoInput {
 	width: 640px;
+	height: 480px;
+	background-color: #666;
+}
+#canvasOutput{
+	width:640px;
 	height: 480px;
 	background-color: #666;
 }
@@ -26,33 +31,45 @@
 		type="text/javascript"></script>
 	<script src="js/utils.js" type="text/javascript"></script>
 <!-- Raw input video -->
-<p>This is the original video element</p>
+This is your webcam stream that the user will see.
 <div id="container" class="video">
 	<video autoplay="true" id="videoInput" width="640" height="480"></video>
 </div>
 <!-- Element that shows if openCV has loaded -->
 <p id="status">OpenCV.js is loading...</p>
 <p id="status_next"></p>
+<p id="estimate_fps">Estimated FPS: 0</p>
 
-
-<!-- Output video location. Currently broken -->
+<!-- Output video location -->
+<input type="button" value="Barebones Mode?" onclick="swapBetween(this)"></input>
 <div id = "container">
 		<canvas id="canvasOutput" width="640" height="480"></canvas>
 </div>
 
 <!-- Change Alpha And Beta Values -->
-<input id="alpha" type="number" onchange="valueCheck(this)" value=0.9 defaultValue=0.9 min=0 max=1>Alpha Value (difference added)</input>
-<input id="beta" type="number" onchange="valueCheck(this)" value=0.9 defaultValue=0.9 min=0 max=1>Beta Value (momentum decay rate)</input> <br>
-<input id="FPS" type="number" onchange="valueCheck(this)" value=60 defaultValue=60 min=1 max=100>FPS</input><br>
-<input type="checkbox" id="onlybestguess" onclick="valueCheck(this)">Show only best guess</input><br>
-<input type="checkbox" id="rednose" onclick='valueCheck(this)' checked>Show detected nose (red box)</input><br>
-<input type="checkbox" id="greendot" onclick="valueCheck(this)" checked>Show center of nose (green)</input><br>
-<input type="checkbox" id="bluedot" onclick='valueCheck(this)' checked>Show momentum adjusted point (blue dot)</input> <br>
-
-<p id="alphavar"></p>
-<p id="betavar"></p>
-<p id="output"></p>
+<div id="inputs">
+	<input id="alpha" type="number" onchange="valueCheck(this)" value=0.9 defaultValue=0.9 min=0 max=1>Alpha (difference added)</input>
+	<input id="beta" type="number" onchange="valueCheck(this)" value=0.9 defaultValue=0.9 min=0 max=1>Beta (momentum decay rate)</input>
+	<input id="FPS" type="number" onchange="valueCheck(this)" value=60 defaultValue=60 min=1 max=100>FPS</input><br>
+	<input type="checkbox" id="onlybestguess" onclick="valueCheck(this)">Show only best guess</input><br>
+	<input type="checkbox" id="rednose" onclick='valueCheck(this)' checked>Show detected nose (red box)</input><br>
+	<input type="checkbox" id="greendot" onclick="valueCheck(this)" checked>Show center of nose (green)</input><br>
+	<input type="checkbox" id="bluedot" onclick='valueCheck(this)' checked>Show momentum adjusted point (blue dot)</input> <br>
+</div>
 <script>
+var videotype = true;
+function swapBetween(object){
+	const value = (object.value == "Barebones Mode?")
+	videotype = !value
+	if (value){
+		object.value = "Fancy Mode?"
+    document.getElementById("inputs").style.display = "none"
+	} else {
+		object.value = "Barebones Mode?"
+    document.getElementById("inputs").style.display="block"
+	}
+};
+
 var momentum = {x:0, y:0};
 // FPS is utilized in how frequently the output canvas is updated (with an upper limit on processing speed of computer)
 var FPS = document.getElementById("FPS").value;
@@ -100,7 +117,7 @@ function bestGuess(objects, previous){
       //Grabs the minimum height detected nose when no previous nose to base off of
       const minimum_height = Math.min(...objects.map(obj=>obj.y));
       const location = objects.findIndex(obj=> obj.y == minimum_height)
-      objects[locaiton].detected = true
+      objects[location].detected = true
       return objects[location]
     } else {
       // gets the nose closest to the previous nose
@@ -134,14 +151,11 @@ delta = (cur,prev) => ({x:cur.x-prev.x, y:cur.y-prev.y})
 sum = (first, second) => ({x:first.x+second.x, y:first.y+second.y})
 multScal = (scalar, point) => ({x:point.x*scalar, y: point.y*scalar})
 function momentumAdjustment(previous, current){
-	document.getElementById("alphavar").innerHTML = "current Alpha Var: " + alpha
-	document.getElementById("betavar").innerHTML = "current Beta Var: " + beta
   if ((current == undefined) && (previous == undefined)){
     return undefined
   } else if (previous == undefined){
     return current
   } else if (current == undefined){
-		console.log(momentum)
     momentum = multScal(beta, momentum)
     let out = sum(previous, momentum)
     return out
@@ -151,7 +165,6 @@ function momentumAdjustment(previous, current){
 		//console.log(alpha_little)
 		const momentum_little = multScal(beta, momentum)
     momentum = sum(alpha_little, momentum_little)
-		console.log(momentum)
     let out = sum(current, momentum)
 		//console.log(out)
     return out
@@ -166,7 +179,7 @@ function openCvReady() {
     let video = document.getElementById("videoInput");
 
 	//update text about openCV loading
-	document.getElementById("status").innerHTML = "OpenCV.js has loaded.";
+	document.getElementById("status").style.display = "none"// "OpenCV.js has loaded.";
 	document.getElementById("status_next").innerHTML = "This is the processed output.";
 
 	//start the the video element to stream from webcam
@@ -178,7 +191,6 @@ function openCvReady() {
     .catch(function(err) {
         console.log("An error occurred! " + err);
     });
-
 		// actual content
     let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
     let dst = new cv.Mat(video.height, video.width, cv.CV_8UC1);
@@ -191,9 +203,22 @@ function openCvReady() {
     utils.createFileFromUrl(noseCascadeFile, noseCascadeFile, () => {
     	classifier.load(noseCascadeFile); // in the callback, load the cascade from file
 		});
-		centerOfRectangle = obj => ({x: obj.x + Math.floor(obj.width/2), y: obj.y + Math.floor(obj.height/2)})
+		// some variables for momentum method's implementation.
+		var undetected_counter = 0
 		var previous ;
+		centerOfRectangle = obj => ({x: obj.x + Math.floor(obj.width/2), y: obj.y + Math.floor(obj.height/2)})
 		function newProcess(){
+			//If no detected point (or we guessed the previous point)
+			if (previous == undefined || !previous.detected){
+				undetected_counter += 1
+				if (undetected_counter > 10){ // after enough time, reset our guesses
+					momentum = {x:0, y:0}
+					previous = undefined
+				}
+			} else {
+				undetected_counter = 0
+			}
+			// Reading the image and converting to grayscale, etc
 		  let begin = Date.now();
 		  cap.read(src);
 		  src.copyTo(dst);
@@ -205,30 +230,21 @@ function openCvReady() {
 		  }
 		  // Here we find and draw the momentum adjusted point (utilizing bestGuess, and momentumAdjustment)
 		  if(bluedot){
-				//if (noses.size() == 0){}else{
 					let nose_list = []
 					for(i=0; i<noses.size(); i++){
 						let n = noses.get(i)
 						let out = {x:n.x, y:n.y, height:n.height, width:n.width}
-						document.getElementById("output").innerHTML += "detected out: " +JSON.stringify(out) + "<br>" + "center: " + JSON.stringify(centerOfRectangle(out)) + "<br>"
 						let update =  nose_list.push(out)
 					}
-					//console.log(nose_list)
 			    let nose_points = nose_list.map(centerOfRectangle)
-					//console.log(nose_points)
 			    let one_nose = bestGuess(nose_points, previous)
-					//console.log(one_nose)
-					document.getElementById("output").innerHTML += "previous: " + JSON.stringify(previous) +"<br>" + "one nose: " + JSON.stringify(one_nose) + "<br>" + "momentum: " + JSON.stringify(momentum) + "<br>"
 			    let current = momentumAdjustment(previous, one_nose)
-					console.log(current)
-					console.log("end sequence")
 			    previous = current
 					if (current === undefined){}else{
 				    let momentum_point1 = new cv.Point(current.x, current.y)
 				    let momentum_point2 = new cv.Point(current.x+1, current.y+1)
 				    cv.rectangle(dst, momentum_point1, momentum_point2, [0, 0, 255, 255]);
 					}
-				//}
 		  }
 		  // Here we detect all of the noses
 		  if(!onlybestguess){
@@ -248,30 +264,41 @@ function openCvReady() {
 		  } else {
 		    // we have to find the best guess nose
 				let nose_list = []
-				for (let i=0; i < noses.size(); ++i){
-					let tno = nose.get(i)
-					nose_list.push({x:tno.x, y:tno.y, height:tno.height, width:tno.width})
+				for(i=0; i<noses.size(); i++){
+					let n = noses.get(i)
+					let out = {x:n.x, y:n.y, height:n.height, width:n.width}
+					//document.getElementById("output").innerHTML += "detected out: " +JSON.stringify(out) + "<br>" + "center: " + JSON.stringify(centerOfRectangle(out)) + "<br>"
+					let update =  nose_list.push(out)
 				}
 		    let nose_points = nose_list.map(centerOfRectangle)
 		    let one_nose = bestGuess(nose_points, previous)
 		    let location = nose_points.findIndex(n => n.x == one_nose.x && n.y == one_nose.y)
-		    let nose = noses.get(location)
-		    if(rednose){
-		      let point1 = new cv.Point(nose.x, nose.y);
-		      let point2 = new cv.Point(nose.x + nose.width, nose.y + nose.height);
-		      cv.rectangle(dst, point1, point2, [255, 0, 0, 255]); //around the detected nose
-		    }
-		    if(greendot){
-		      let center_width = new cv.Point(nose.x + Math.floor(nose.width/2), nose.y + Math.floor(nose.height/2));
-		      let adjust = new cv.Point(nose.x + Math.floor(nose.width/2) + 1, nose.y + Math.floor(nose.height/2) + 1);
-		      cv.rectangle(dst, center_width, adjust, [0, 255, 0, 255]); // point on the "center" of the nose.
-		    }
+				if (location == -1 || location == undefined){}else{
+					let nose = noses.get(location)
+			    if(rednose){
+			      let point1 = new cv.Point(nose.x, nose.y);
+			      let point2 = new cv.Point(nose.x + nose.width, nose.y + nose.height);
+			      cv.rectangle(dst, point1, point2, [255, 0, 0, 255]); //around the detected nose
+			    }
+			    if(greendot){
+			      let center_width = new cv.Point(nose.x + Math.floor(nose.width/2), nose.y + Math.floor(nose.height/2));
+			      let adjust = new cv.Point(nose.x + Math.floor(nose.width/2) + 1, nose.y + Math.floor(nose.height/2) + 1);
+			      cv.rectangle(dst, center_width, adjust, [0, 255, 0, 255]); // point on the "center" of the nose.
+			    }
+				}
 		  }
 
 		  cv.imshow("canvasOutput", dst);
 		  // schedule next one.
-		  let delay = 1000/FPS - (Date.now() - begin);
-		  setTimeout(newProcess, delay);
+			let time_difference = Date.now() - begin
+			let delay = 1000/FPS - time_difference;
+			//console.log(time_difference)
+			document.getElementById("estimate_fps").innerHTML = "Estimated possible FPS: " + (1000/time_difference).toFixed(2)
+			if (videotype){
+		  	setTimeout(newProcess, delay);
+			} else {
+				setTimeout(processVideo,delay)
+			}
 		}
 
 		function processVideo() {
@@ -281,9 +308,6 @@ function openCvReady() {
 		    cv.cvtColor(dst, gray, cv.COLOR_RGBA2GRAY, 0);
 		    try{
 		        classifier.detectMultiScale(gray, noses, 1.2, 8, 0);
-		        //console.log(noses.size());
-						console.log(type(noses))
-						console.log(noses)
 		    }catch(err){
 		            console.log(err);
 		    }
@@ -298,8 +322,14 @@ function openCvReady() {
 		    }
 		    cv.imshow("canvasOutput", dst);
 		    // schedule next one.
-		    let delay = 1000/FPS - (Date.now() - begin);
-		    setTimeout(processVideo, delay);
+				let time_difference = Date.now() - begin
+		    let delay = 1000/FPS - time_difference;
+				document.getElementById("estimate_fps").innerHTML = "Estimated possible FPS: " + (1000/time_difference).toFixed(2)
+				if(!videotype){
+					setTimeout(processVideo, delay);
+				}else{
+					setTimeout(newProcess, delay)
+				}
 		}
 // schedule first one.
 	setTimeout(newProcess, 0);
