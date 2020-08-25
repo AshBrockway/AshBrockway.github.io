@@ -21,6 +21,32 @@
 	height: 480px;
 	background-color: #666;
 }
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 300px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+  top: 100%;
+  left: 80%;
+  margin-left: -150px;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}
 </style>
 </head>
 
@@ -41,7 +67,30 @@ This is your webcam stream that the user will see.
 <p id="estimate_fps">Estimated FPS: 0</p>
 
 <!-- Output video location -->
-<input type="button" value="Barebones Mode?" onclick="swapBetween(this)"></input>
+<input type="button" value="Barebones Mode?" onclick="swapBetween(this)"></input><br>
+<div id="modelingParams">
+	<input type="number" id="scaleFactor" onchange="valueCheck(this)" value=1.2 defaultValue=1.2 min=1.05 max=5>
+		<div class="tooltip"> Scale Factor
+			<span class="tooltiptext">
+				Parameter specifying how much the image size is reduced at each image scale. <br><br>
+
+				Basically the scale factor is used to create your scale pyramid. More explanation can be found <a href="https://sites.google.com/site/5kk73gpu2012/assignment/viola-jones-face-detection#TOC-Image-Pyramid">here</a>. In short the model has a fixed size defined during training, which is visible in the xml. This means that this size of nose is detected in the image if present. However, by rescaling the input image, you can resize a larger face to a smaller one, making it detectable by the algorithm. <br> <br>
+
+				1.05 is a good possible value for this, which means you use a small step for resizing, i.e. reduce size by 5%, you increase the chance of a matching size with the model for detection is found. This also means that the algorithm works slower since it is more thorough. You may increase it to as much as 1.5 for faster detection, with the risk of missing some faces altogether in the "between" space.			</span>
+		</div>
+	</input>
+	<input type="number" id="minNeighbors" onchange="valueCheck(this)" value=8 defaultValue=8 min=0, max=25>
+		<div class="tooltip"> Minimum Neighbors
+		<span class="tooltiptext">
+			Parameter specifying how many neighbors each candidate rectangle should have to retain it. <br> <br>
+
+			This parameter will affect the quality of the detected faces. Higher value results in less detections but with higher quality (less eyebrows for example). 3~8 is a good value for it.
+		</span>
+		</div>
+	</input>
+</div>
+
+<!-- Output video location -->
 <div id = "container">
 		<canvas id="canvasOutput" width="640" height="480"></canvas>
 </div>
@@ -74,15 +123,24 @@ var momentum = {x:0, y:0};
 // FPS is utilized in how frequently the output canvas is updated (with an upper limit on processing speed of computer)
 var FPS = document.getElementById("FPS").value;
 // The following tow variables are utilized for momentumAdjustments to a detected point
+
+var alpha = document.getElementById("alpha").value; //default 0.9
+var beta = document.getElementById("beta").value;
+// These are output canvas display variables
 var onlybestguess = false
 var rednose = true
 var greendot = true
 var bluedot = true
-var alpha = document.getElementById("alpha").value; //default 0.9
-var beta = document.getElementById("beta").value;
+//These variables effect the detected objects and processing speed of the model
+var scaleFactor = + document.getElementById("scaleFactor").value
+var minNeighbors = + document.getElementById("minNeighbors").value
 function valueCheck(object){
-	let value = +object.value
-  if(object.type == "number"){
+	if (object.id == "minNeighbors"){
+		var value = parseInt(object.value)
+	}else{
+		var value = +object.value
+	}
+	if(object.type == "number"){
     let max = +object.max
     let min = +object.min
     if (value > max){
@@ -92,7 +150,7 @@ function valueCheck(object){
       object.value = min
       window[object.id] = min
     } else {
-      window[object.id] = object.value
+      window[object.id] = value
       console.log(window[object.id])
     }
   } else if (object.type == "checkbox"){
@@ -224,7 +282,7 @@ function openCvReady() {
 		  src.copyTo(dst);
 		  cv.cvtColor(dst, gray, cv.COLOR_RGBA2GRAY, 0);
 		  try{
-		      classifier.detectMultiScale(gray, noses, 1.2, 8, 0);
+		      classifier.detectMultiScale(gray, noses, scaleFactor, minNeighbors, 0);
 		  }catch(err){
 		      console.log(err);
 		  }
@@ -307,7 +365,7 @@ function openCvReady() {
 		    src.copyTo(dst);
 		    cv.cvtColor(dst, gray, cv.COLOR_RGBA2GRAY, 0);
 		    try{
-		        classifier.detectMultiScale(gray, noses, 1.2, 8, 0);
+		        classifier.detectMultiScale(gray, noses, scaleFactor, minNeighbors, 0);
 		    }catch(err){
 		            console.log(err);
 		    }
