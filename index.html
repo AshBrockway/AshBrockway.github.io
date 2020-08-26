@@ -257,7 +257,7 @@ function openCvReady() {
     let noses = new cv.RectVector();
     let classifier = new cv.CascadeClassifier();
     let utils = new Utils('errorMessage');
-    let noseCascadeFile = "Nariz.xml";
+    let noseCascadeFile = "cascade.xml";
     utils.createFileFromUrl(noseCascadeFile, noseCascadeFile, () => {
     	classifier.load(noseCascadeFile); // in the callback, load the cascade from file
 		});
