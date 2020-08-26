@@ -97,9 +97,10 @@ This is your webcam stream that the user will see.
 
 <!-- Change Alpha And Beta Values -->
 <div id="inputs">
-	<div id="model_menu" type ="dropbtn" onchange="valueCheck(this)" defaultValue="cascade.xml">Choose a Model</button>
-		<a href="cascade.xml">Model 1</a>
-		<a href="idk.xl">Model 2</a>
+	<select id="model_menu">Choose a Model
+		<option value="cascade.xml">Model 1</option>
+		<option value="idk.xml">Model 2</option>
+	</select>
 	<input id="alpha" type="number" onchange="valueCheck(this)" value=0.9 defaultValue=0.9 min=0 max=1>Alpha (difference added)</input>
 	<input id="beta" type="number" onchange="valueCheck(this)" value=0.9 defaultValue=0.9 min=0 max=1>Beta (momentum decay rate)</input>
 	<input id="FPS" type="number" onchange="valueCheck(this)" value=60 defaultValue=60 min=1 max=100>FPS</input><br>
