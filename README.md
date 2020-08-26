@@ -1,4 +1,5 @@
-# ClientSideNoseTracking
-This repository is an example of nose tracking on video that's done client side with OpenCV.js
+# Adapting Justin's ClientSideNoseTracking for Past Trained Rubix Cube Detection Models 
 
-There's also a "momentum" method (displayed as the blue dot) implemented to exaggerate any subtle facial movements (nods), as well as functionality to only show the best guessed nose (the one closest to the previously detected nose) as a motion tracking engineered feature. 
+One line chance to the file 'index.html' in https://github.com/JustinTienken-Harder/JustinTienken-Harder.github.io
+
+Purpose is for in-class presentation of past semester's work. 
