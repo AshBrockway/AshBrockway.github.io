@@ -97,10 +97,10 @@ This is your webcam stream that the user will see.
 
 <!-- Change Alpha And Beta Values -->
 <div id="inputs">
-	<select id="model_menu">Choose a Model
+	<select id="model_menu" onchange="switching(this)">Choose a Model
 		<option value="cascade.xml">Model 1</option>
 		<option value="idk.xml">Model 2</option>
-	</select>
+	</select></br>
 	<input id="alpha" type="number" onchange="valueCheck(this)" value=0.9 defaultValue=0.9 min=0 max=1>Alpha (difference added)</input>
 	<input id="beta" type="number" onchange="valueCheck(this)" value=0.9 defaultValue=0.9 min=0 max=1>Beta (momentum decay rate)</input>
 	<input id="FPS" type="number" onchange="valueCheck(this)" value=60 defaultValue=60 min=1 max=100>FPS</input><br>
@@ -126,7 +126,19 @@ function swapBetween(object){
 var momentum = {x:0, y:0};
 // FPS is utilized in how frequently the output canvas is updated (with an upper limit on processing speed of computer)
 var FPS = document.getElementById("FPS").value;
-// The following tow variables are utilized for momentumAdjustments to a detected point
+
+// get elements for dropdown
+
+var Model = document.getElementById("model_menu").value;
+var change = false;
+console.log(Model)
+
+function switching(thingy){
+	Model = thingy.value;
+	change = true;
+}
+
+// The following two variables are utilized for momentumAdjustments to a detected point
 
 var alpha = document.getElementById("alpha").value; //default 0.9
 var beta = document.getElementById("beta").value;
@@ -138,6 +150,7 @@ var bluedot = true
 //These variables effect the detected objects and processing speed of the model
 var scaleFactor = + document.getElementById("scaleFactor").value
 var minNeighbors = + document.getElementById("minNeighbors").value
+
 function valueCheck(object){
 	if (object.id == "minNeighbors"){
 		var value = parseInt(object.value)
@@ -261,7 +274,7 @@ function openCvReady() {
     let noses = new cv.RectVector();
     let classifier = new cv.CascadeClassifier();
     let utils = new Utils('errorMessage');
-    let noseCascadeFile = "cascade.xml";
+    let noseCascadeFile = Model;
     utils.createFileFromUrl(noseCascadeFile, noseCascadeFile, () => {
     	classifier.load(noseCascadeFile); // in the callback, load the cascade from file
 		});
@@ -356,6 +369,13 @@ function openCvReady() {
 			let delay = 1000/FPS - time_difference;
 			//console.log(time_difference)
 			document.getElementById("estimate_fps").innerHTML = "Estimated possible FPS: " + (1000/time_difference).toFixed(2)
+			if(change){
+				classifier = new cv.CascadeClassifier();
+				let noseCascadeFile = Model;
+				utils.createFileFromUrl(noseCascadeFile, noseCascadeFile, () => {
+					classifier.load(noseCascadeFile); // in the callback, load the cascade from file
+				});
+			}
 			if (videotype){
 		  	setTimeout(newProcess, delay);
 			} else {
@@ -387,6 +407,13 @@ function openCvReady() {
 				let time_difference = Date.now() - begin
 		    let delay = 1000/FPS - time_difference;
 				document.getElementById("estimate_fps").innerHTML = "Estimated possible FPS: " + (1000/time_difference).toFixed(2)
+				if(change){
+					classifier = new cv.CascadeClassifier();
+					let noseCascadeFile = Model;
+			    utils.createFileFromUrl(noseCascadeFile, noseCascadeFile, () => {
+			    	classifier.load(noseCascadeFile); // in the callback, load the cascade from file
+					});
+				}
 				if(!videotype){
 					setTimeout(processVideo, delay);
 				}else{
