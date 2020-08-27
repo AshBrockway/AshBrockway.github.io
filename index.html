@@ -378,6 +378,7 @@ function openCvReady() {
 				utils.createFileFromUrl(noseCascadeFile, noseCascadeFile, () => {
 					classifier.load(noseCascadeFile); // in the callback, load the cascade from file
 				});
+				setTimeout(newProcess, 1000);
 			}
 			if (videotype){
 		  	setTimeout(newProcess, delay);
@@ -417,6 +418,7 @@ function openCvReady() {
 			    utils.createFileFromUrl(noseCascadeFile, noseCascadeFile, () => {
 			    	classifier.load(noseCascadeFile); // in the callback, load the cascade from file
 					});
+					setTimeout(newProcess, 1000);
 				}
 				if(!videotype){
 					setTimeout(processVideo, delay);
