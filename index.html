@@ -100,8 +100,8 @@ This is your webcam stream that the user will see.
 	<select id="model_menu" onchange="switching(this)">Choose a Model
 		<option value="first_iteration.xml">Least Data</option>
 		<option value="HAAR8stage.xml">8 Stage HAAR</option>
-		<!--<option value="LBP13.xml">LBP 13 Stages</option>
-		<option value="LBP15.xml">LBP 15 Stages</option> -->
+		<option value="LBP13.xml">LBP 13 Stages</option>
+		<option value="LBP15.xml">LBP 15 Stages</option>
 	</select></br>
 	<input id="alpha" type="number" onchange="valueCheck(this)" value=0.9 defaultValue=0.9 min=0 max=1>Alpha (difference added)</input>
 	<input id="beta" type="number" onchange="valueCheck(this)" value=0.9 defaultValue=0.9 min=0 max=1>Beta (momentum decay rate)</input>
@@ -372,6 +372,7 @@ function openCvReady() {
 			//console.log(time_difference)
 			document.getElementById("estimate_fps").innerHTML = "Estimated possible FPS: " + (1000/time_difference).toFixed(2)
 			if(change){
+				change=false
 				classifier = new cv.CascadeClassifier();
 				let noseCascadeFile = Model;
 				utils.createFileFromUrl(noseCascadeFile, noseCascadeFile, () => {
@@ -410,6 +411,7 @@ function openCvReady() {
 		    let delay = 1000/FPS - time_difference;
 				document.getElementById("estimate_fps").innerHTML = "Estimated possible FPS: " + (1000/time_difference).toFixed(2)
 				if(change){
+					change=false
 					classifier = new cv.CascadeClassifier();
 					let noseCascadeFile = Model;
 			    utils.createFileFromUrl(noseCascadeFile, noseCascadeFile, () => {
